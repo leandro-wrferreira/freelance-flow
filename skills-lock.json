@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "atomic-design-fundamentals": {
+      "source": "thebushidocollective/han",
+      "sourceType": "github",
+      "computedHash": "4a2d3a077911fd8da7ac42c42ff120345e476078ede8f523c9a0a7b4e3eb7cc8"
+    },
+    "clean-ddd-hexagonal": {
+      "source": "ccheney/robust-skills",
+      "sourceType": "github",
+      "computedHash": "b9a54e257685086d0034bd8277964452b7208e2f18bf68d158996936ce667b6a"
+    },
+    "ddd-hexagonal-architecture": {
+      "source": "teachingai/full-stack-skills",
+      "sourceType": "github",
+      "computedHash": "8087e747b7eb391c3bf4614ef4523c4991cfc8eb4878663060cd083154ebbe9f"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "computedHash": "2bc6cf38ec7b4a5778a43fabb3e87642c9897ad45e9eb42438b57fd2def6cca8"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d836a3567233bc5367d3f5f78cf0d90289f2b2385e37d22f450886e435e15c73"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d606a1146be6d54fb9e73f718b5320b9acac5ff2ba2d7230a555df4b5a923b4a"
+    },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "ad055544599481182d0079c4198e85da26677cb408a677be2da04915375f0427"
+    }
+  }
+}
