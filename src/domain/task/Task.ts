@@ -1,3 +1,5 @@
+import { TimeEntry } from "./TimeEntry";
+
 export interface Task {
   id: string;
   projectId: string;
@@ -7,5 +9,7 @@ export interface Task {
   accumulatedTime: number;
   timerStartedAt: Date | null;
   files: string | null;
+  timeEntries?: TimeEntry[];
   createdAt: Date;
 }
+

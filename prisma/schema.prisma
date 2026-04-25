@@ -90,6 +90,7 @@ model Project {
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks      Task[]
+  auditLogs  AuditLog[]
   hourlyRate Float?
   fixedPrice Float?
   createdAt  DateTime @default(now())
@@ -97,17 +98,44 @@ model Project {
   @@map("project")
 }
 
+
 model Task {
-  id              String    @id @default(uuid())
+  id              String      @id @default(uuid())
   projectId       String
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title           String
   description     String?
-  status          String    @default("todo")
-  accumulatedTime Int       @default(0)
+  status          String      @default("todo")
+  accumulatedTime Int         @default(0)
   timerStartedAt  DateTime?
   files           String?
-  createdAt       DateTime  @default(now())
+  timeEntries     TimeEntry[]
+  createdAt       DateTime    @default(now())
 
   @@map("task")
 }
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  description String?
+  duration    Int      // in seconds
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("time_entry")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  action      String   // e.g., "CREATE_TASK", "MOVE_TASK", "ADD_TIME"
+  details     String   // JSON or text description
+  createdAt   DateTime @default(now())
+
+  @@map("audit_log")
+}
+

@@ -56,11 +56,11 @@ export function FolderList({ initialFolders, userId }: { initialFolders: any[], 
                 {folder.name}
               </CardTitle>
               <Dialog open={addingProjectForFolder === folder.id} onOpenChange={(open) => setAddingProjectForFolder(open ? folder.id : null)}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-muted-foreground hover:text-primary transition-colors gap-1 rounded-lg">
-                    <Plus className="size-3" /> Projeto
-                  </Button>
-                </DialogTrigger>
+              <DialogTrigger render={
+                <Button variant="ghost" size="sm" className="h-7 text-xs font-bold text-muted-foreground hover:text-primary transition-colors gap-1 rounded-lg">
+                  <Plus className="size-3" /> Projeto
+                </Button>
+              } />
                 <DialogContent className="sm:max-w-[425px] rounded-3xl">
                   <form onSubmit={(e) => handleAddProject(e, folder.id)}>
                     <DialogHeader>
@@ -143,7 +143,7 @@ export function FolderList({ initialFolders, userId }: { initialFolders: any[], 
         ))}
 
         <Dialog open={isAddingFolder} onOpenChange={setIsAddingFolder}>
-          <DialogTrigger asChild>
+          <DialogTrigger render={
             <Button
               variant="outline"
               className="h-full min-h-[250px] rounded-3xl border-2 border-dashed border-border bg-card/20 hover:bg-card/40 hover:border-primary/40 hover:text-primary transition-all duration-300 flex flex-col gap-3 group/add"
@@ -153,7 +153,7 @@ export function FolderList({ initialFolders, userId }: { initialFolders: any[], 
               </div>
               <span className="text-xs font-bold uppercase tracking-widest">Nova Pasta</span>
             </Button>
-          </DialogTrigger>
+          } />
           <DialogContent className="sm:max-w-[425px] rounded-3xl">
             <form onSubmit={handleAddFolder}>
               <DialogHeader>

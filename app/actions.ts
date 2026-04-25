@@ -76,7 +76,28 @@ export async function toggleTimer(taskId: string, projectId: string) {
   revalidatePath("/project/" + projectId);
 }
 
+export async function finalizeTimer(taskId: string, projectId: string, description: string, startTime: Date) {
+  await taskUseCases.finalizeTimer(taskId, description, startTime);
+  revalidatePath("/project/" + projectId);
+}
+
+export async function addManualTime(taskId: string, projectId: string, hours: number, minutes: number, date: Date) {
+  await taskUseCases.addManualTime(taskId, hours, minutes, date);
+  revalidatePath("/project/" + projectId);
+}
+
 export async function getTasks(projectId: string) {
   return taskUseCases.getTasks(projectId);
 }
+
+export async function updateTask(taskId: string, projectId: string, title: string, description: string) {
+  await taskUseCases.updateTask(taskId, title, description);
+  revalidatePath("/project/" + projectId);
+}
+
+
+export async function getTaskWithDetails(taskId: string) {
+  return taskUseCases.getTaskWithDetails(taskId);
+}
+
 
