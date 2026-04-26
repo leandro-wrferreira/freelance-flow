@@ -15,7 +15,7 @@ import { Textarea } from "@/src/components/atoms/textarea";
 import { Label } from "@/src/components/atoms/label";
 import { format } from "date-fns";
 import { exportTaskReport } from "@/src/lib/pdf-export";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
   DndContext,
   DragOverlay,

@@ -19,7 +19,7 @@ export class PrismaTaskRepository implements TaskRepository {
   async update(id: string, data: Partial<Omit<Task, "id" | "createdAt">>): Promise<Task> {
     return prisma.task.update({
       where: { id },
-      data,
+      data: data as any,
     });
   }
 

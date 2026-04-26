@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: freelance-flow-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: freelance_flow
+    ports:
+      - "4031:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: freelance-flow-app
+    restart: always
+    ports:
+      - "4030:3000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@db:5432/freelance_flow?schema=public"
+      DIRECT_URL: "postgresql://postgres:password@db:5432/freelance_flow?schema=public"
+      BETTER_AUTH_SECRET: "kJ23IYmMepwnuAnWNADQ6K4BqYnvYPIR"
+      BETTER_AUTH_URL: "http://localhost:4030"
+      APP_URL: "http://localhost:4030"
+      NEXT_TELEMETRY_DISABLED: 1
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,19 +1,18 @@
 import { getProject, getTasks } from "@/app/actions";
-import { getSession } from "@/src/infrastructure/auth/auth-server";
+
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Clock, DollarSign } from "lucide-react";
 import { TaskBoard } from "@/src/components/organisms/TaskBoard";
 import { Badge } from "@/src/components/atoms/badge";
 
-export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
-  const session = await getSession();
-  if (!session) redirect("/");
+export const dynamic = 'force-dynamic';
 
+export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const project = await getProject(projectId);
   
-  if (!project || project.userId !== session.user.id) {
+  if (!project) {
     redirect("/");
   }
 
