@@ -2,8 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 
-import { updateTaskStatus, toggleTimer, createTask, finalizeTimer, addManualTime, getTaskWithDetails, updateTask } from "@/app/actions";
-import { Play, Pause, Plus, MoreHorizontal, Paperclip, Clock, Calendar, FileText, Download, CheckCircle2, History, X, GripVertical, Save, Edit2, ChevronLeft } from "lucide-react";
+import { updateTaskStatus, toggleTimer, createTask, finalizeTimer, addManualTime, getTaskWithDetails, updateTask, deleteTask } from "@/app/actions";
+import { Play, Pause, Plus, MoreHorizontal, Paperclip, Clock, Calendar, FileText, Download, CheckCircle2, History, X, GripVertical, Save, Edit2, ChevronLeft, Trash2 } from "lucide-react";
 import { cn, formatTime } from "@/lib/utils";
 import { Button } from "@/src/components/atoms/button";
 import { Badge } from "@/src/components/atoms/badge";
@@ -28,6 +28,7 @@ import {
   DragOverEvent,
   DragEndEvent,
   defaultDropAnimationSideEffects,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -37,6 +38,15 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+
+// --- Constants ---
+
+const statusLabels: Record<string, string> = {
+  "todo": "To Do",
+  "in-progress": "In Progress",
+  "done": "Done"
+};
 
 
 // --- Components ---
@@ -80,7 +90,7 @@ function ActiveTimer({ task, projectId }: { task: any, projectId: string }) {
       >
         <div className="flex flex-col">
           <span className="text-[10px] font-bold uppercase tracking-widest text-primary animate-pulse flex items-center gap-1">
-            <Clock className="size-3" /> Em execução
+            <Clock className="size-3" /> Running
           </span>
           <span className="text-sm font-bold truncate max-w-[150px]">{task.title}</span>
         </div>
@@ -96,7 +106,7 @@ function ActiveTimer({ task, projectId }: { task: any, projectId: string }) {
             <Pause className="size-4 text-primary" />
           </Button>
           <Button onClick={() => setShowFinalize(true)} className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground gap-2 px-4 h-9">
-            <CheckCircle2 className="size-4" /> Finalizar
+            <CheckCircle2 className="size-4" /> Finalize
           </Button>
         </div>
       </motion.div>
@@ -105,23 +115,23 @@ function ActiveTimer({ task, projectId }: { task: any, projectId: string }) {
         <DialogContent className="sm:max-w-[425px] rounded-[2rem]">
           <form onSubmit={handleFinalize}>
             <DialogHeader>
-              <DialogTitle>Finalizar Atividade</DialogTitle>
+              <DialogTitle>Finalize Activity</DialogTitle>
               <DialogDescription>
-                Adicione uma descrição do que foi feito e confirme o horário de início.
+                Add a description of what was done and confirm the start time.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="description" className="text-xs font-bold uppercase text-muted-foreground">O que você fez?</Label>
-                <Textarea id="description" name="description" placeholder="Descreva brevemente sua atividade..." className="rounded-xl" />
+                <Label htmlFor="description" className="text-xs font-bold uppercase text-muted-foreground">What did you do?</Label>
+                <Textarea id="description" name="description" placeholder="Briefly describe your activity..." className="rounded-xl" />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="startTime" className="text-xs font-bold uppercase text-muted-foreground">Início Real (opcional)</Label>
+                <Label htmlFor="startTime" className="text-xs font-bold uppercase text-muted-foreground">Actual Start (optional)</Label>
                 <Input id="startTime" name="startTime" type="datetime-local" defaultValue={format(new Date(task.timerStartedAt), "yyyy-MM-dd'T'HH:mm")} className="rounded-xl" />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="w-full rounded-xl py-6">Confirmar e Salvar Tempo</Button>
+              <Button type="submit" className="w-full rounded-xl py-6">Confirm and Save Time</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -130,7 +140,7 @@ function ActiveTimer({ task, projectId }: { task: any, projectId: string }) {
   );
 }
 
-function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, projectId: string, open: boolean, onOpenChange: (open: boolean) => void }) {
+function TaskDetailsModal({ task, projectId, open, onOpenChange, onDelete }: { task: any, projectId: string, open: boolean, onOpenChange: (open: boolean) => void, onDelete: (id: string) => void }) {
   const [details, setDetails] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showAddManual, setShowAddManual] = useState(false);
@@ -188,7 +198,7 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
           <div className="flex justify-between items-start mb-6 pr-8">
             <div className="flex-1">
               <Badge variant="outline" className="mb-2 rounded-lg border-primary/20 text-primary bg-primary/5 uppercase tracking-widest text-[10px] px-2">
-                {task.status}
+                {statusLabels[task.status] || task.status}
               </Badge>
               {isEditing ? (
                 <Input 
@@ -203,12 +213,17 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
             <div className="flex items-center gap-2">
               {isEditing ? (
                 <Button onClick={handleSave} size="sm" className="rounded-xl gap-2 px-4">
-                  <Save className="size-4" /> Salvar
+                  <Save className="size-4" /> Save
                 </Button>
               ) : (
-                <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="rounded-xl text-muted-foreground hover:text-primary">
-                  <Edit2 className="size-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="rounded-xl text-muted-foreground hover:text-primary">
+                    <Edit2 className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} className="rounded-xl text-muted-foreground hover:text-destructive">
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -217,18 +232,18 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
             <div className="md:col-span-2 space-y-8">
               <section>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                  <FileText className="size-3" /> Descrição
+                  <FileText className="size-3" /> Description
                 </h3>
                 {isEditing ? (
                   <Textarea 
                     value={editedDescription} 
                     onChange={e => setEditedDescription(e.target.value)}
-                    placeholder="Adicione detalhes sobre esta tarefa..."
+                    placeholder="Add details about this task..."
                     className="bg-muted/30 rounded-2xl p-4 text-sm min-h-[150px] resize-none border-primary/20"
                   />
                 ) : (
                   <div className="bg-muted/30 rounded-2xl p-4 text-sm leading-relaxed text-foreground/80 min-h-[100px] whitespace-pre-wrap">
-                    {task.description || "Nenhuma descrição fornecida."}
+                    {task.description || "No description provided."}
                   </div>
                 )}
               </section>
@@ -236,21 +251,21 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <History className="size-3" /> Histórico de Tempo
+                    <History className="size-3" /> Time History
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => setShowAddManual(true)} className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 rounded-lg">
-                    <Plus className="size-3 mr-1" /> Adicionar Manual
+                    <Plus className="size-3 mr-1" /> Add Manual
                   </Button>
                 </div>
                 
                 <div className="space-y-2">
                   {loading ? (
-                    <div className="h-20 flex items-center justify-center text-muted-foreground animate-pulse">Carregando histórico...</div>
+                    <div className="h-20 flex items-center justify-center text-muted-foreground animate-pulse">Loading history...</div>
                   ) : details?.timeEntries?.length > 0 ? (
                     details.timeEntries.map((entry: any) => (
                       <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-colors">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold">{entry.description || "Sessão de trabalho"}</span>
+                          <span className="text-xs font-bold">{entry.description || "Work session"}</span>
                           <span className="text-[10px] text-muted-foreground">{format(new Date(entry.startTime), "dd/MM/yyyy HH:mm")}</span>
                         </div>
                         <Badge variant="secondary" className="font-mono text-[10px] tabular-nums bg-muted border-none">
@@ -260,7 +275,7 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
                     ))
                   ) : (
                     <div className="text-center py-6 text-xs text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
-                      Nenhum tempo registrado ainda.
+                      No time recorded yet.
                     </div>
                   )}
                 </div>
@@ -270,7 +285,7 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
             <div className="space-y-6">
               <section>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                   <Clock className="size-3" /> Tempo Total
+                   <Clock className="size-3" /> Total Time
                 </h3>
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 text-center">
                   <span className="text-2xl font-black tabular-nums text-primary">
@@ -281,7 +296,7 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
 
               <section>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                   <Paperclip className="size-3" /> Anexos ({task.files ? JSON.parse(task.files).length : 0})
+                   <Paperclip className="size-3" /> Attachments ({task.files ? JSON.parse(task.files).length : 0})
                 </h3>
                 <div className="space-y-2">
                   {task.files && JSON.parse(task.files).map((file: any, i: number) => (
@@ -308,29 +323,29 @@ function TaskDetailsModal({ task, projectId, open, onOpenChange }: { task: any, 
         <DialogContent className="sm:max-w-[400px] rounded-[2rem]">
           <form onSubmit={handleAddManualTime}>
             <DialogHeader>
-              <DialogTitle>Adicionar Tempo Manual</DialogTitle>
+              <DialogTitle>Add Manual Time</DialogTitle>
               <DialogDescription>
-                Selecione o dia e quanto tempo você trabalhou nesta tarefa.
+                Select the day and how much time you worked on this task.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-6">
               <div className="grid gap-2">
-                <Label htmlFor="date" className="text-xs font-bold uppercase text-muted-foreground">Data</Label>
+                <Label htmlFor="date" className="text-xs font-bold uppercase text-muted-foreground">Date</Label>
                 <Input id="date" name="date" type="date" required defaultValue={format(new Date(), "yyyy-MM-dd")} className="rounded-xl" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="hours" className="text-xs font-bold uppercase text-muted-foreground">Horas</Label>
+                  <Label htmlFor="hours" className="text-xs font-bold uppercase text-muted-foreground">Hours</Label>
                   <Input id="hours" name="hours" type="number" min="0" defaultValue="0" className="rounded-xl" />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="minutes" className="text-xs font-bold uppercase text-muted-foreground">Minutos</Label>
+                  <Label htmlFor="minutes" className="text-xs font-bold uppercase text-muted-foreground">Minutes</Label>
                   <Input id="minutes" name="minutes" type="number" min="0" max="59" defaultValue="0" className="rounded-xl" />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="w-full rounded-xl py-6">Salvar Tempo</Button>
+              <Button type="submit" className="w-full rounded-xl py-6">Save Time</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -356,30 +371,30 @@ function ExportModal({ tasks, projectName, hourlyRate, open, onOpenChange }: { t
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px] rounded-[2rem]">
         <DialogHeader>
-          <DialogTitle>Exportar Relatório PDF</DialogTitle>
+          <DialogTitle>Export PDF Report</DialogTitle>
           <DialogDescription>
-            Selecione o período e as colunas que deseja incluir no relatório.
+            Select the period and the columns you want to include in the report.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">De</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">From</Label>
               <Input type="date" value={period.from} onChange={e => setPeriod(p => ({ ...p, from: e.target.value }))} className="rounded-xl" />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Até</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">To</Label>
               <Input type="date" value={period.to} onChange={e => setPeriod(p => ({ ...p, to: e.target.value }))} className="rounded-xl" />
             </div>
           </div>
           
           <div className="grid gap-3">
-             <Label className="text-xs font-bold uppercase text-muted-foreground">Colunas</Label>
+             <Label className="text-xs font-bold uppercase text-muted-foreground">Columns</Label>
              <div className="flex flex-wrap gap-2">
                {[
-                 { id: "todo", label: "Para Fazer" },
-                 { id: "in-progress", label: "Em Andamento" },
-                 { id: "done", label: "Concluído" }
+                 { id: "todo", label: "To Do" },
+                 { id: "in-progress", label: "In Progress" },
+                 { id: "done", label: "Done" }
                ].map(s => (
                  <Button 
                    key={s.id} 
@@ -397,7 +412,7 @@ function ExportModal({ tasks, projectName, hourlyRate, open, onOpenChange }: { t
         </div>
         <DialogFooter>
           <Button onClick={handleExport} className="w-full rounded-xl py-6 gap-2">
-            <Download className="size-4" /> Gerar Relatório PDF
+            <Download className="size-4" /> Generate PDF Report
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -415,7 +430,46 @@ const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
 
 // --- Main Board ---
 
-function SortableTask({ task, colId, activeTaskTimer, projectId, onSelect, onMove }: { task: any, colId: string, activeTaskTimer: any, projectId: string, onSelect: (task: any) => void, onMove: (id: string, status: string) => void }) {
+// --- Droppable Column ---
+function DroppableColumn({ id, title, count, children }: { id: string, title: string, count: number, children: React.ReactNode }) {
+  const { setNodeRef } = useDroppable({
+    id,
+    data: {
+      type: "Column",
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+           <span className={cn("size-2 rounded-full", 
+            id === "todo" ? "bg-muted-foreground/30" : 
+            id === "in-progress" ? "bg-primary animate-pulse" : 
+            "bg-emerald-500"
+          )} />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {title}
+          </span>
+        </div>
+        <Badge variant="secondary" className="text-[10px] h-5 rounded-md px-1.5 font-bold bg-muted text-muted-foreground border-border">
+          {count}
+        </Badge>
+      </div>
+
+      <div 
+        ref={setNodeRef}
+        className="flex flex-col gap-2 p-3 rounded-[2rem] bg-card/20 border border-border/50 min-h-[200px]"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// --- Sortable Task ---
+
+function SortableTask({ task, colId, activeTaskTimer, projectId, onSelect, onMove, onDelete }: { task: any, colId: string, activeTaskTimer: any, projectId: string, onSelect: (task: any) => void, onMove: (id: string, status: string) => void, onDelete: (id: string) => void }) {
   const {
     attributes,
     listeners,
@@ -463,7 +517,7 @@ function SortableTask({ task, colId, activeTaskTimer, projectId, onSelect, onMov
           <div {...attributes} {...listeners} className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground transition-colors">
             <GripVertical className="size-3" />
           </div>
-          <span className={cn("text-xs font-bold leading-tight", colId === "done" && "line-through")}>
+          <span className={cn("text-xs font-bold leading-tight", colId === "done" && "line-through opacity-50")}>
             {task.title}
           </span>
         </div>
@@ -475,9 +529,10 @@ function SortableTask({ task, colId, activeTaskTimer, projectId, onSelect, onMov
             </Button>
           } onClick={(e) => e.stopPropagation()} />
           <DropdownMenuContent align="end" className="rounded-xl">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "todo"); }} className="text-xs">Para Fazer</DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "in-progress"); }} className="text-xs">Em Andamento</DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "done"); }} className="text-xs">Concluído</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "todo"); }} className="text-xs">To Do</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "in-progress"); }} className="text-xs">In Progress</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(task.id, "done"); }} className="text-xs">Done</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-xs text-destructive">Delete</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -485,7 +540,7 @@ function SortableTask({ task, colId, activeTaskTimer, projectId, onSelect, onMov
       <div className="flex items-center gap-3 mt-3 ml-5">
         {task.timerStartedAt ? (
            <Badge className="bg-primary/10 text-primary border-none text-[8px] uppercase tracking-tighter px-1.5 h-4 flex gap-1 items-center animate-pulse">
-             <div className="size-1 rounded-full bg-primary" /> Rodando
+             <div className="size-1 rounded-full bg-primary" /> Running
            </Badge>
         ) : task.accumulatedTime > 0 && (
           <span className="text-[9px] font-mono font-bold text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-md tabular-nums">
@@ -537,9 +592,9 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
   const activeTaskTimer = useMemo(() => tasks.find(t => !!t.timerStartedAt), [tasks]);
 
   const columns = [
-    { id: "todo", title: "Para Fazer" },
-    { id: "in-progress", title: "Em Andamento" },
-    { id: "done", title: "Concluído" },
+    { id: "todo", title: "To Do" },
+    { id: "in-progress", title: "In Progress" },
+    { id: "done", title: "Done" },
   ];
 
   const sensors = useSensors(
@@ -556,6 +611,14 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
   const handleMove = async (taskId: string, newStatus: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     await updateTaskStatus(taskId, newStatus, projectId);
+  };
+
+  const handleDelete = async (taskId: string) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      await deleteTask(taskId, projectId);
+      if (selectedTask?.id === taskId) setSelectedTask(null);
+    }
   };
 
   const onDragStart = (event: DragStartEvent) => {
@@ -660,7 +723,7 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
               </Badge>
             )}
             <Button onClick={() => setShowExport(true)} variant="outline" className="rounded-xl h-10 gap-2 font-bold text-[10px] uppercase tracking-wider border-primary/20 bg-card/50 hover:bg-primary/5 shadow-sm backdrop-blur-md">
-              <Download className="size-4" /> Exportar Relatório
+              <Download className="size-4" /> Export Report
             </Button>
          </div>
       </div>
@@ -674,28 +737,14 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
       >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start min-h-[calc(100vh-250px)] pb-24">
           {columns.map(col => (
-            <div key={col.id} className="flex flex-col gap-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                   <span className={cn("size-2 rounded-full", 
-                    col.id === "todo" ? "bg-muted-foreground/30" : 
-                    col.id === "in-progress" ? "bg-primary animate-pulse" : 
-                    "bg-emerald-500"
-                  )} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {col.title}
-                  </span>
-                </div>
-                <Badge variant="secondary" className="text-[10px] h-5 rounded-md px-1.5 font-bold bg-muted text-muted-foreground border-border">
-                  {tasks.filter(t => t.status === col.id).length}
-                </Badge>
-              </div>
-
+            <DroppableColumn 
+              key={col.id} 
+              id={col.id} 
+              title={col.title} 
+              count={tasks.filter(t => t.status === col.id).length}
+            >
               <SortableContext items={tasks.filter(t => t.status === col.id).map(t => t.id)} strategy={verticalListSortingStrategy}>
-                <div 
-                  id={col.id}
-                  className="flex flex-col gap-2 p-3 rounded-[2rem] bg-card/20 border border-border/50 min-h-[200px]"
-                >
+                <div className="flex flex-col gap-2">
                   {tasks.filter(t => t.status === col.id).map(task => (
                     <SortableTask 
                       key={task.id} 
@@ -705,6 +754,7 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
                       projectId={projectId}
                       onSelect={setSelectedTask} 
                       onMove={handleMove}
+                      onDelete={handleDelete}
                     />
                   ))}
 
@@ -714,41 +764,41 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
                         variant="ghost"
                         className="w-full bg-card/40 border border-dashed border-border text-muted-foreground font-bold text-[9px] uppercase tracking-widest rounded-xl p-3 h-auto flex flex-row gap-2 justify-center hover:bg-card hover:text-primary hover:border-primary/30 transition-all"
                       >
-                        <Plus className="size-3" /> Nova
+                        <Plus className="size-3" /> New
                       </Button>
                     } />
                     <DialogContent className="sm:max-w-[425px] rounded-3xl">
                       <form onSubmit={(e) => handleCreate(e, col.id)}>
                         <DialogHeader>
-                          <DialogTitle>Nova Atividade</DialogTitle>
+                          <DialogTitle>New Activity</DialogTitle>
                           <DialogDescription>
-                            Adicione uma nova tarefa à coluna {col.title}.
+                            Add a new task to the {col.title} column.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-6 py-6">
                           <div className="grid gap-2">
-                            <Label htmlFor="title" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Título</Label>
-                            <Input id="title" name="title" required placeholder="Título da atividade" className="rounded-xl h-10" />
+                            <Label htmlFor="title" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Title</Label>
+                            <Input id="title" name="title" required placeholder="Activity title" className="rounded-xl h-10" />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="description" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Descrição</Label>
-                            <Textarea id="description" name="description" placeholder="Adicionar detalhes..." rows={3} className="rounded-xl resize-none" />
+                            <Label htmlFor="description" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Description</Label>
+                            <Textarea id="description" name="description" placeholder="Add details..." rows={3} className="rounded-xl resize-none" />
                           </div>
                           <div className="grid gap-2">
-                             <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Anexos</Label>
+                             <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Attachments</Label>
                              <Input id="files" name="files" type="file" multiple className="rounded-xl h-10 text-xs cursor-pointer" />
                           </div>
                         </div>
                         <DialogFooter className="gap-2 sm:gap-0">
-                          <Button type="button" variant="ghost" onClick={() => setAddingTaskTo(null)} className="rounded-xl">Cancelar</Button>
-                          <Button type="submit" className="rounded-xl px-8">Salvar</Button>
+                          <Button type="button" variant="ghost" onClick={() => setAddingTaskTo(null)} className="rounded-xl">Cancel</Button>
+                          <Button type="submit" className="rounded-xl px-8">Save</Button>
                         </DialogFooter>
                       </form>
                     </DialogContent>
                   </Dialog>
                 </div>
               </SortableContext>
-            </div>
+            </DroppableColumn>
           ))}
         </div>
 
@@ -771,6 +821,7 @@ export function TaskBoard({ initialTasks, projectId, projectName, hourlyRate }: 
           projectId={projectId} 
           open={!!selectedTask} 
           onOpenChange={(open) => !open && setSelectedTask(null)} 
+          onDelete={handleDelete}
         />
       )}
 

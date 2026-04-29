@@ -100,4 +100,9 @@ export async function getTaskWithDetails(taskId: string) {
   return taskUseCases.getTaskWithDetails(taskId);
 }
 
+export async function deleteTask(taskId: string, projectId: string) {
+  await taskUseCases.deleteTask(taskId);
+  revalidatePath("/project/" + projectId);
+}
+
 

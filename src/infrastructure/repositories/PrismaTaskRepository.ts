@@ -24,14 +24,14 @@ export class PrismaTaskRepository implements TaskRepository {
   }
 
   async findById(id: string): Promise<Task | null> {
-    return prisma.task.findUnique({
-      where: { id },
+    return prisma.task.findFirst({
+      where: { id, deletedAt: null },
     });
   }
 
   async findByProjectId(projectId: string): Promise<Task[]> {
     return prisma.task.findMany({
-      where: { projectId },
+      where: { projectId, deletedAt: null },
       orderBy: { createdAt: "asc" },
       include: {
         timeEntries: true
@@ -52,14 +52,21 @@ export class PrismaTaskRepository implements TaskRepository {
   }
 
   async getTaskWithDetails(id: string): Promise<Task | null> {
-    return prisma.task.findUnique({
-      where: { id },
+    return prisma.task.findFirst({
+      where: { id, deletedAt: null },
       include: {
         timeEntries: {
           orderBy: { startTime: "desc" }
         }
       }
     }) as unknown as Task | null;
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.task.update({
+      where: { id },
+      data: { deletedAt: new Date() }
+    });
   }
 }
 

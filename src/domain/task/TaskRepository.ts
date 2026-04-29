@@ -9,5 +9,6 @@ export interface TaskRepository {
   createTimeEntry(data: { taskId: string, description: string | null, duration: number, startTime: Date, endTime: Date }): Promise<TimeEntry>;
   createAuditLog(data: { projectId: string, action: string, details: string }): Promise<void>;
   getTaskWithDetails(id: string): Promise<Task | null>;
+  delete(id: string): Promise<void>;
 }
 

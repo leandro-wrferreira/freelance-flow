@@ -11,5 +11,6 @@ export interface Task {
   files: string | null;
   timeEntries?: TimeEntry[];
   createdAt: Date;
+  deletedAt?: Date | null;
 }
 

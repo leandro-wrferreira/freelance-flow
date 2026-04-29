@@ -8,7 +8,7 @@ export class TaskUseCases {
     await this.taskRepo.createAuditLog({
       projectId,
       action: "CREATE_TASK",
-      details: `Atividade "${title}" criada.`
+      details: `Task "${title}" created.`
     });
     return task;
   }
@@ -21,7 +21,7 @@ export class TaskUseCases {
     await this.taskRepo.createAuditLog({
       projectId: task.projectId,
       action: "MOVE_TASK",
-      details: `Atividade "${task.title}" movida para ${status}.`
+      details: `Task "${task.title}" moved to ${status}.`
     });
   }
 
@@ -42,7 +42,7 @@ export class TaskUseCases {
       await this.taskRepo.createAuditLog({
         projectId: task.projectId,
         action: "PAUSE_TIMER",
-        details: `Timer pausado na atividade "${task.title}".`
+        details: `Timer paused on task "${task.title}".`
       });
     } else {
       // Start timer
@@ -52,7 +52,7 @@ export class TaskUseCases {
       await this.taskRepo.createAuditLog({
         projectId: task.projectId,
         action: "START_TIMER",
-        details: `Timer iniciado na atividade "${task.title}".`
+        details: `Timer started on task "${task.title}".`
       });
     }
   }
@@ -80,7 +80,7 @@ export class TaskUseCases {
     await this.taskRepo.createAuditLog({
       projectId: task.projectId,
       action: "FINALIZE_TIMER",
-      details: `Timer finalizado na atividade "${task.title}". Duração: ${duration}s.`
+      details: `Timer finalized on task "${task.title}". Duration: ${duration}s.`
     });
   }
 
@@ -94,7 +94,7 @@ export class TaskUseCases {
 
     await this.taskRepo.createTimeEntry({
       taskId,
-      description: "Adicionado manualmente",
+      description: "Added manually",
       duration,
       startTime,
       endTime
@@ -107,7 +107,7 @@ export class TaskUseCases {
     await this.taskRepo.createAuditLog({
       projectId: task.projectId,
       action: "ADD_MANUAL_TIME",
-      details: `Tempo manual adicionado à atividade "${task.title}": ${hours}h ${minutes}m.`
+      details: `Manual time added to task "${task.title}": ${hours}h ${minutes}m.`
     });
   }
 
@@ -119,12 +119,23 @@ export class TaskUseCases {
     await this.taskRepo.createAuditLog({
       projectId: task.projectId,
       action: "UPDATE_TASK",
-      details: `Atividade "${task.title}" atualizada.`
+      details: `Task "${task.title}" updated.`
+    });
+  }
+
+  async deleteTask(taskId: string) {
+    const task = await this.taskRepo.findById(taskId);
+    if (!task) return;
+    
+    await this.taskRepo.delete(taskId);
+    await this.taskRepo.createAuditLog({
+      projectId: task.projectId,
+      action: "DELETE_TASK",
+      details: `Task "${task.title}" deleted (soft delete).`
     });
   }
 
   async getTasks(projectId: string) {
-
     return this.taskRepo.findByProjectId(projectId);
   }
 
@@ -132,4 +143,3 @@ export class TaskUseCases {
     return this.taskRepo.getTaskWithDetails(taskId);
   }
 }
-

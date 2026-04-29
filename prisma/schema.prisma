@@ -46,6 +46,7 @@ model Task {
   files           String?
   timeEntries     TimeEntry[]
   createdAt       DateTime    @default(now())
+  deletedAt       DateTime?
 
   @@map("task")
 }
