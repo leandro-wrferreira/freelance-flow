@@ -6,4 +6,5 @@ export interface Project {
   hourlyRate: number | null;
   fixedPrice: number | null;
   createdAt: Date;
+  deletedAt?: Date | null;
 }

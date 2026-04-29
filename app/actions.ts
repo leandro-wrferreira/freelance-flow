@@ -49,6 +49,21 @@ export async function getProject(projectId: string) {
   return projectUseCases.getProject(projectId);
 }
 
+export async function updateProject(
+  projectId: string,
+  name: string,
+  hourlyRate: number | null,
+  fixedPrice: number | null
+) {
+  await projectUseCases.updateProject(projectId, { name, hourlyRate, fixedPrice });
+  revalidatePath("/");
+}
+
+export async function deleteProject(projectId: string) {
+  await projectUseCases.deleteProject(projectId);
+  revalidatePath("/");
+}
+
 // Task Actions
 export async function createTask(
   projectId: string,

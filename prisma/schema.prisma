@@ -29,6 +29,7 @@ model Project {
   hourlyRate Float?
   fixedPrice Float?
   createdAt  DateTime @default(now())
+  deletedAt  DateTime?
 
   @@map("project")
 }

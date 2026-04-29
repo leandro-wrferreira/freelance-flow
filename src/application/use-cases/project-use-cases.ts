@@ -1,3 +1,4 @@
+import { Project } from "@/src/domain/project/Project";
 import { ProjectRepository } from "@/src/domain/project/ProjectRepository";
 
 export class ProjectUseCases {
@@ -13,5 +14,13 @@ export class ProjectUseCases {
 
   async getProject(projectId: string) {
     return this.projectRepo.findById(projectId);
+  }
+
+  async updateProject(projectId: string, data: Partial<Omit<Project, "id" | "createdAt">>) {
+    return this.projectRepo.update(projectId, data);
+  }
+
+  async deleteProject(projectId: string) {
+    return this.projectRepo.delete(projectId);
   }
 }

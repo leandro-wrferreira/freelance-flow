@@ -15,16 +15,30 @@ export class PrismaProjectRepository implements ProjectRepository {
     });
   }
 
+  async update(id: string, data: Partial<Omit<Project, "id" | "createdAt">>): Promise<Project> {
+    return prisma.project.update({
+      where: { id },
+      data: data as any,
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.project.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
   async findByFolderId(folderId: string): Promise<Project[]> {
     return prisma.project.findMany({
-      where: { folderId },
+      where: { folderId, deletedAt: null },
       orderBy: { createdAt: "asc" },
     });
   }
 
   async findById(id: string): Promise<Project | null> {
-    return prisma.project.findUnique({
-      where: { id },
+    return prisma.project.findFirst({
+      where: { id, deletedAt: null },
     });
   }
 }
